@@ -1,11 +1,13 @@
 import React, { useState } from 'react'
 import styles from "./Signup.module.css";
 import InputControl from '../InputControl/InputControl';
-import { Link } from "react-router-dom";
-import { createUserWithEmailAndPassword } from 'firebase/auth';
+import { Link, useNavigate } from "react-router-dom";
+import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
+// import { auth } from '../../Firebase';
 import { auth } from '../../Firebase';
 
 const Signup = () => {
+    const navigate = useNavigate();
     const [values, setValues] = useState({
         name: "",
         email: "",
@@ -13,6 +15,7 @@ const Signup = () => {
     })
 
     const [errorMsg, setErrorMsg] = useState("");
+    const [submitButtonDisable, setSubmitButtonDisable] = useState(false);
 
     const handleSubmission = () => {
         if (!values.name || !values.email || !values.pass) {
@@ -21,11 +24,21 @@ const Signup = () => {
         }
         setErrorMsg("")
 
+        setSubmitButtonDisable(true)
         createUserWithEmailAndPassword(auth, values.email, values.pass)
-            .then((res) => {
-                console.log(res);
+            .then(async (res) => {
+                setSubmitButtonDisable(false)
+                const user = res.user;
+                await updateProfile(user, {
+                    displayName: values.name,
+                });
+                navigate("/");
+
             })
-            .catch((err) => console.log("Error-", err));
+            .catch((err) => {
+                setSubmitButtonDisable(false)
+                setErrorMsg(err.message)
+            });
     }
     return (
         <div className={styles.container}>
@@ -53,7 +66,8 @@ const Signup = () => {
 
                 <div className={styles.footer}>
                     <b className={styles.error}>{errorMsg}</b>
-                    <button onClick={handleSubmission}>Signup</button>
+                    <button onClick={handleSubmission} disabled={submitButtonDisable}>
+                        Signup</button>
                     <p>
                         Already have an Account?{" "}
                         <span>
